@@ -6,14 +6,14 @@ name: Build and Push Custom HA Image (armv7)
 on:
   push:
     branches:
-      - 'main'
+      - 'main' 
   workflow_dispatch:
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
 
-    # 授予 Action 写入 'Packages' (GHCR) 的权限
+    # 关键：授予 Action 写入 'Packages' (GHCR) 的权限
     permissions:
       contents: read
       packages: write 
@@ -36,20 +36,23 @@ jobs:
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
-          username: ${{ github.actor }} 
-          password: ${{ secrets.GITHUB_TOKEN }} # 使用 Action 自动生成的临时令牌
+          # 使用 | lower 过滤器确保用户名是小写的
+          username: ${{ github.actor | lower }} 
+          # 使用 Action 自动生成的临时令牌
+          password: ${{ secrets.GITHUB_TOKEN }} 
 
-# 5. 构建并推送镜像 (armv7)
-          - name: Build and push Docker image
-            uses: docker/build-push-action@v5
-            with:
-              context: .
-              file: ./Dockerfile
-              # 关键：指定为您设备的 armv7l 架构
-              platforms: linux/arm/v7 
-              push: true
-              
-              # 修正：使用 'lower' 过滤器确保用户名小写，并确保仓库名也小写。
-              tags: |
-                ghcr.io/${{ github.actor | lower }}/ha-custom-core:latest 
-                ghcr.io/${{ github.actor | lower }}/ha-custom-core:${{ github.sha }}
+      # 5. 构建并推送镜像 (armv7)
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          # 关键：指定为您设备的 armv7l 架构
+          platforms: linux/arm/v7 
+          push: true
+          
+          # 修正后的标签：使用 | lower 过滤器确保标签格式正确
+          # 格式: ghcr.io/小写用户名/小写仓库名:TAG
+          tags: |
+            ghcr.io/${{ github.actor | lower }}/ha-custom-core:latest 
+            ghcr.io/${{ github.actor | lower }}/ha-custom-core:${{ github.sha }}
